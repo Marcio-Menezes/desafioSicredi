@@ -1,7 +1,6 @@
 package com.dbserver.desafiovotacao.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.NonNull;
 
 import java.util.UUID;
 

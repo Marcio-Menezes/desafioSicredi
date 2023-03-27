@@ -6,7 +6,6 @@ package com.dbserver.desafiovotacao.service;
 
 import com.dbserver.desafiovotacao.dto.VotanteRequest;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
-import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import com.dbserver.desafiovotacao.repository.VotanteRepositorio;
 

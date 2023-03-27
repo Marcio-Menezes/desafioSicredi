@@ -2,7 +2,6 @@ package com.dbserver.desafiovotacao.model;
 
 import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
 import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
-import com.dbserver.desafiovotacao.enums.VotoEnum;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 
 @NoArgsConstructor
 @AllArgsConstructor

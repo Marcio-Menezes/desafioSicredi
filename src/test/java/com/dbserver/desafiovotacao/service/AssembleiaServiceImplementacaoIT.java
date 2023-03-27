@@ -15,11 +15,9 @@ import com.dbserver.desafiovotacao.repository.AssembleiaRepositorio;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
@@ -28,14 +26,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -68,6 +61,7 @@ public class AssembleiaServiceImplementacaoIT {
 
 
     @Test
+    @DisplayName("Teste para retornar uma assembleia valida")
     public void testEncontrarAssembleiaPorIDSucesso() {
         given(assembleiaService.encontrarAssembleiaPorID(assembleia.getId())).willReturn(Optional.of(assembleia));
 		Optional<Assembleia> resposta = assembleiaService.encontrarAssembleiaPorID(assembleia.getId());
@@ -75,6 +69,7 @@ public class AssembleiaServiceImplementacaoIT {
     }
     
     @Test
+    @DisplayName("Teste para retornar uma assembleia invalida")
     public void testEncontrarAssembleiaPorIDFalha() {
         UUID idRandom = UUID.randomUUID();
         given(assembleiaService.encontrarAssembleiaPorID(idRandom)).willReturn(Optional.empty());
@@ -83,6 +78,7 @@ public class AssembleiaServiceImplementacaoIT {
     }
 
     @Test
+    @DisplayName("Teste para salvar uma assembleia")
     public void testSalvarAssembleia() {
         when(assembleiaRepositorio.save(assembleia)).thenReturn(assembleia);
         assembleia.setAberturaAssembleia(LocalDateTime.now());
@@ -109,7 +105,7 @@ public class AssembleiaServiceImplementacaoIT {
 
     @Test
     @DisplayName("Teste para mostrar tudo")
-    public void testaMostrarTudo() throws Exception {
+    public void testaMostrarTudo(){
         List<Assembleia> listaAssembleias = Arrays.asList(assembleia);
         given(assembleiaRepositorio.findAll()).willReturn(listaAssembleias);
         Iterable<Assembleia> resposta = assembleiaService.mostraTudo();
@@ -118,7 +114,7 @@ public class AssembleiaServiceImplementacaoIT {
 
     @Test
     @DisplayName("Teste de mostrar todas as pautas")
-    public void testaMostrarPautas() throws Exception {
+    public void testaMostrarPautas(){
         given(assembleiaService.encontrarAssembleiaPorID(assembleia.getId())).willReturn(Optional.of(assembleia));
         List<Pauta> listaPauta = assembleia.getListaPauta();
         Iterable<Pauta> resposta = assembleiaService.mostraPautas(assembleia.getId());

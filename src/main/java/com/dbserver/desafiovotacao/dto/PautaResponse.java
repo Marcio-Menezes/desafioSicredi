@@ -1,7 +1,6 @@
 package com.dbserver.desafiovotacao.dto;
 
 import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
-import com.dbserver.desafiovotacao.model.Assembleia;
 import com.dbserver.desafiovotacao.model.Pauta;
 
 import java.util.UUID;

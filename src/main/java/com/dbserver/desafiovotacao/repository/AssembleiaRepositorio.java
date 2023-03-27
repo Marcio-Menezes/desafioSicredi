@@ -1,7 +1,6 @@
 
 package com.dbserver.desafiovotacao.repository;
 
-import com.dbserver.desafiovotacao.dto.AssembleiaRequest;
 import com.dbserver.desafiovotacao.model.Assembleia;
 
 import java.util.Optional;

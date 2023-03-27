@@ -9,7 +9,6 @@ import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.service.AssembleiaServiceImplementacao;
 import jakarta.validation.Valid;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;

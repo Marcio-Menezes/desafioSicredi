@@ -2,7 +2,6 @@
 package com.dbserver.desafiovotacao.service;
 
 import com.dbserver.desafiovotacao.dto.VotanteRequest;
-import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import java.util.Optional;
 import java.util.UUID;

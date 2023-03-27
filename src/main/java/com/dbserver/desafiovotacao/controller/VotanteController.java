@@ -1,10 +1,9 @@
 
 package com.dbserver.desafiovotacao.controller;
 
-import com.dbserver.desafiovotacao.dto.PautaResponse;
+
 import com.dbserver.desafiovotacao.dto.VotanteRequest;
 import com.dbserver.desafiovotacao.dto.VotanteResponse;
-import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import com.dbserver.desafiovotacao.service.PautaServiceImplementacao;
 import com.dbserver.desafiovotacao.service.VotanteServiceImplementacao;

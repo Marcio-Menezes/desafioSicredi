@@ -5,16 +5,13 @@
 package com.dbserver.desafiovotacao.service;
 
 import com.dbserver.desafiovotacao.dto.*;
-import com.dbserver.desafiovotacao.enums.AssembleiaEnum;
 import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
 import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
-import com.dbserver.desafiovotacao.model.Assembleia;
 import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import com.dbserver.desafiovotacao.repository.PautaRepositorio;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-import com.dbserver.desafiovotacao.repository.VotanteRepositorio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -112,7 +108,7 @@ public class PautaServiceImplementacaoIT {
 
     @Test
     @DisplayName("Teste de mostrar todas as pautas")
-    public void testaMostrarPautas() throws Exception {
+    public void testaMostrarPautas(){
         List<Pauta> listaPautas = Arrays.asList(pauta);
         given(pautaService.mostraPautas()).willReturn(listaPautas);
         assertEquals(1,listaPautas.size());

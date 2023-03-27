@@ -2,10 +2,8 @@
 package com.dbserver.desafiovotacao.service;
 
 import com.dbserver.desafiovotacao.dto.VotanteRequest;
-import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import com.dbserver.desafiovotacao.repository.VotanteRepositorio;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;

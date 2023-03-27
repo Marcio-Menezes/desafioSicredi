@@ -91,11 +91,11 @@ public class PautaControllerIT {
         List<Pauta> listaPauta = Arrays.asList(pauta);
         given(pautaService.mostraPautas()).willReturn(listaPauta);
         ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(pautaResponse);
+        String encontrarPautaJSON = mapper.writeValueAsString(pautaResponse);
         this.mockito.perform(get("/pauta/mostrartodas")
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(encontrarAssembleiaJSON))
+                        .content(encontrarPautaJSON))
                 .andExpect(status().isOk());
     }
 
@@ -131,11 +131,11 @@ public class PautaControllerIT {
 
         given(pautaService.encontrarPautaPorID(pauta.getId())).willReturn(Optional.of(pauta));
         ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(pautaResponse);
+        String encontrarPautaJSON = mapper.writeValueAsString(pautaResponse);
         this.mockito.perform(get("/pauta/associados/" + pauta.getId())
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(encontrarAssembleiaJSON))
+                        .content(encontrarPautaJSON))
                 .andExpect(status().isOk());
     }
 
@@ -145,11 +145,11 @@ public class PautaControllerIT {
         UUID idInvalido = UUID.randomUUID();
         given(pautaService.encontrarPautaPorID(idInvalido)).willReturn(Optional.empty());
         ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(pautaResponse);
+        String encontrarPautaJSON = mapper.writeValueAsString(pautaResponse);
         this.mockito.perform(get("/pauta/associados/" + pauta.getId())
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(encontrarAssembleiaJSON))
+                        .content(encontrarPautaJSON))
                 .andExpect(status().isNotFound());
     }
 
@@ -160,11 +160,11 @@ public class PautaControllerIT {
         ClienteRequest clienteRequest  = new ClienteRequest(novoVotante.getId());
         given(pautaService.adicionarAssociado(pauta.getHash(),clienteRequest)).willReturn(pauta);
         ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(clienteRequest);
+        String encontrarPautaJSON = mapper.writeValueAsString(clienteRequest);
         this.mockito.perform(post("/pauta/adicionavotante/" + pauta.getHash())
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(encontrarAssembleiaJSON))
+                        .content(encontrarPautaJSON))
                 .andExpect(status().isOk());
     }
 
@@ -183,11 +183,11 @@ public class PautaControllerIT {
         String hashInvalido = "invalido";
         given(pautaService.finalizarPauta(hashInvalido)).willReturn(pauta);
         ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(pautaResponse);
+        String encontrarPautaJSON = mapper.writeValueAsString(pautaResponse);
         this.mockito.perform(get("/pauta/finaliza/" + hashInvalido)
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(encontrarAssembleiaJSON))
+                        .content(encontrarPautaJSON))
                 .andExpect(status().isNotFound());
     }
     
