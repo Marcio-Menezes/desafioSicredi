@@ -1,6 +1,8 @@
 
 package com.dbserver.desafiovotacao.service;
 
+import com.dbserver.desafiovotacao.dto.VotanteRequest;
+import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import com.dbserver.desafiovotacao.repository.VotanteRepositorio;
 import java.util.List;
@@ -20,17 +22,13 @@ public class VotanteServiceImplementacao implements VotanteService{
 	}
         
     @Override
-	public Optional<Votante> findById(UUID id) throws DataAccessException {
+	public Optional<Votante> encontrarVotantePorID(UUID id) throws DataAccessException {
 		return votanteRepositorio.findById(id);
 	}
         
     @Override
-	public int totalVotantes() {
-		List<Votante> lista = (List<Votante>) this.votanteRepositorio.findAll();
-		if(lista.isEmpty()) {
-			return 0;
-		}
-		return lista.size();
+	public long totalVotantes() {
+		return votanteRepositorio.count();
 	}
     @Override
 	public Iterable<Votante> findAll() {
@@ -38,7 +36,8 @@ public class VotanteServiceImplementacao implements VotanteService{
 	}
         
     @Override
-    public Votante salvarVotante(Votante votante) throws DataAccessException {
-        return votanteRepositorio.save(votante);
+    public Votante salvarVotante(VotanteRequest votanteRequest) throws DataAccessException {
+        return votanteRepositorio.save(Votante.builder().idVotante(votanteRequest.codAssociado())
+				.voto(votanteRequest.votoEnum()).build());
     }
 }

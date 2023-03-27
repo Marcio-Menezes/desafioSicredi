@@ -4,13 +4,14 @@
  */
 package com.dbserver.desafiovotacao.service;
 
+import com.dbserver.desafiovotacao.dto.VotanteRequest;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
+import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import com.dbserver.desafiovotacao.repository.VotanteRepositorio;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+
+import java.util.*;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +21,7 @@ import org.mockito.Mock;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,19 +37,19 @@ public class VotanteServiceImplementacaoIT {
     @InjectMocks
     VotanteServiceImplementacao votanteService;
 
-    String id = "f5425a38-9fbd-43ac-b810-7ef31fd0f1dd";
-
     Votante votante;
+
+    VotanteRequest votanteRequest = new VotanteRequest("codTeste", VotoEnum.NAO);
 
     @BeforeEach
     public void setUp() {
-        votante = Votante.builder().id(UUID.fromString(id)).voto(VotoEnum.NAO).build();
+        votante = Votante.builder().idVotante("codTeste").voto(VotoEnum.NAO).build();
     }
 
     @Test
     public void testFindByIdSucesso() {
         when(votanteRepositorio.findById(votante.getId())).thenReturn(Optional.of(votante));
-        Optional<Votante> retorno = votanteService.findById(votante.getId());
+        Optional<Votante> retorno = votanteService.encontrarVotantePorID(votante.getId());
         assertEquals(Optional.of(votante), retorno);
     }
 
@@ -55,7 +57,7 @@ public class VotanteServiceImplementacaoIT {
     public void testFindByIdFalho() {
         UUID idRandom = UUID.randomUUID();
         when(votanteRepositorio.findById(idRandom)).thenReturn(Optional.of(votante));
-        Optional<Votante> retorno = votanteService.findById(votante.getId());
+        Optional<Votante> retorno = votanteService.encontrarVotantePorID(votante.getId());
         assertEquals(Optional.empty(), retorno);
     }
 
@@ -71,8 +73,17 @@ public class VotanteServiceImplementacaoIT {
     @Test
     public void testSalvarVotante() {
         when(votanteRepositorio.save(votante)).thenReturn(votante);
-		votanteService.salvarVotante(votante);
+		votanteService.salvarVotante(votanteRequest);
 		verify(votanteRepositorio, times(1)).save(votante);
+    }
+
+    @Test
+    @DisplayName("Teste de mostrar o total de votantes")
+    public void testaTotalVotantes() {
+        List<Votante> listaVotantes = Arrays.asList(votante);
+        given(votanteService.totalVotantes()).willReturn((long) listaVotantes.size());
+        assertEquals(1,listaVotantes.size());
+        assertEquals(votante,listaVotantes.get(0));
     }
 
 }

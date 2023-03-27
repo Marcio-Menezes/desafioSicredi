@@ -2,17 +2,11 @@
 package com.dbserver.desafiovotacao.model;
 
 import com.dbserver.desafiovotacao.enums.AssembleiaEnum;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -31,16 +25,19 @@ public class Assembleia implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
+    @Column(name = "nome", length = 255, nullable = false)
+    private String nomeAssembleia;
+
+    @Column(name = "inicio_assembleia", nullable = false)
+    private LocalDateTime aberturaAssembleia = LocalDateTime.now();
+    @Column(name = "fim_assembleia")
+    private LocalDateTime encerramentoAssembleia;
     @OneToMany
     @JoinTable(name = "assembleia_pauta", joinColumns = @JoinColumn(name = "assembleia_id"),
             inverseJoinColumns = @JoinColumn(name = "pauta_id"))
-    private List<Pauta> listaPauta;
+    private List<Pauta> listaPauta = new ArrayList<>();
     @JoinColumn(name = "status")
     @Enumerated(EnumType.STRING)
-    private AssembleiaEnum status; 
-    
-    @NonNull
-    public void adicionarPauta(Pauta pauta) {
-	this.listaPauta.add(pauta);
-    }
+    private AssembleiaEnum status;
 }

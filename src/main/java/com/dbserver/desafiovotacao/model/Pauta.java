@@ -1,8 +1,10 @@
 package com.dbserver.desafiovotacao.model;
 
+import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
 import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import jakarta.persistence.*;
@@ -33,16 +35,14 @@ public class Pauta implements Serializable {
     @OneToMany
     @JoinTable(name = "pauta_votantes", joinColumns = @JoinColumn(name = "pauta_id"),
             inverseJoinColumns = @JoinColumn(name = "votantes_id"))
-    private List<Votante> associados;
+    private List<Votante> associados = new ArrayList<>();
     @Column(name = "resultado")
     @Enumerated(EnumType.STRING)
     private PautaResultadoEnum resultado;
+    @Column(name = "andamento")
+    @Enumerated(EnumType.STRING)
+    private PautaAndamentoEnum andamento;
     @Column(name = "hash" , nullable =false)
     private String hash;
-    
-    @NonNull
-    public void adicionarAssociado(Votante votante) {
-	this.associados.add(votante);
-    }
 
 }

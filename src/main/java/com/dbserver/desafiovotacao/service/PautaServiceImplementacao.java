@@ -1,11 +1,14 @@
 package com.dbserver.desafiovotacao.service;
 
+import com.dbserver.desafiovotacao.dto.ClienteRequest;
+import com.dbserver.desafiovotacao.dto.PautaRequest;
+import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
 import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
 import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import com.dbserver.desafiovotacao.repository.PautaRepositorio;
-import java.util.List;
+
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +18,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class PautaServiceImplementacao implements PautaService {
 
+    private final VotanteService votanteService;
     private final PautaRepositorio pautaRepositorio;
 
     @Autowired
-    public PautaServiceImplementacao(PautaRepositorio pautaRepositorio) {
+    public PautaServiceImplementacao(VotanteService votanteService, PautaRepositorio pautaRepositorio) {
+        this.votanteService = votanteService;
         this.pautaRepositorio = pautaRepositorio;
     }
 
@@ -28,13 +33,15 @@ public class PautaServiceImplementacao implements PautaService {
     }
     
     @Override
-    public Pauta encontrarPautaPorHash(String hash) throws DataAccessException {
-        return pautaRepositorio.findByHash(hash).orElseThrow();
+    public Optional<Pauta> encontrarPautaPorHash(String hash) throws DataAccessException {
+        return pautaRepositorio.findByHash(hash);
     }
 
     @Override
-    public Pauta salvarPauta(Pauta pauta) throws DataAccessException {
-        return pautaRepositorio.save(pauta);
+    public Pauta salvarPauta(PautaRequest pautaRequest) throws DataAccessException {
+        Optional<Votante> buscaAutor = votanteService.encontrarVotantePorID(pautaRequest.idAutor());
+        return pautaRepositorio.save(Pauta.builder().titulo(pautaRequest.titulo())
+                        .autorPauta(buscaAutor.get()).hash(pautaRequest.hash()).andamento(PautaAndamentoEnum.APURANDO).build());
     }
     
     @Override
@@ -52,23 +59,38 @@ public class PautaServiceImplementacao implements PautaService {
     }
 
     @Override
-    public Optional<Pauta> updatePauta(Pauta pauta) {
-        Optional<Pauta> atualizaPauta = pautaRepositorio.findById(pauta.getId());
-        if (atualizaPauta.isPresent()) {
-            PautaResultadoEnum resultadoAtualizado;
-            if(contabilizaVotos(pauta)>= (pauta.getAssociados().size()/2)){
-                resultadoAtualizado = PautaResultadoEnum.APROVADO;
-            }else{
-                resultadoAtualizado = PautaResultadoEnum.INDEFERIDO;
-            }
-            atualizaPauta.get().setResultado(resultadoAtualizado);
-        }
-        return atualizaPauta;
+    public Pauta adicionarAssociado(String hashPauta, ClienteRequest clienteRequest){
+        Optional<Pauta> pauta = encontrarPautaPorHash(hashPauta);
+        Optional<Votante> votante = votanteService.encontrarVotantePorID(clienteRequest.id());
+        if(pauta.isEmpty()|| votante.isEmpty())
+            return null;
+
+        pauta.get().getAssociados().add(votante.get());
+        return pautaRepositorio.save(pauta.get());
     }
 
-    public Integer contabilizaVotos(Pauta pauta) {
-        Integer contagemVotos = 0;
-        contagemVotos = pauta.getAssociados().stream().filter(associado -> (associado.getVoto().equals(VotoEnum.SIM))).map(i -> 1).reduce(contagemVotos, Integer::sum);
-        return contagemVotos;
+    @Override
+    public Pauta finalizarPauta(String hash) {
+        Optional<Pauta> pautaOpcional = encontrarPautaPorHash(hash);
+        if (pautaOpcional.isEmpty())
+            return null;
+
+        Pauta pauta = pautaOpcional.get();
+        Integer contSim = pauta.getAssociados().stream()
+                .filter(associado -> associado.getVoto() == VotoEnum.SIM)
+                .mapToInt(i -> 1).sum();
+        Integer totalVotos = pauta.getAssociados().size();
+
+        if (totalVotos == 0) {
+            pauta.setAndamento(PautaAndamentoEnum.APURANDO);
+            return pauta;
+        } else if (contSim >= (totalVotos / 2) + 1) {
+            pauta.setResultado(PautaResultadoEnum.APROVADO);
+        } else {
+            pauta.setResultado(PautaResultadoEnum.INDEFERIDO);
+        }
+
+        pauta.setAndamento(PautaAndamentoEnum.CONCLUIDO);
+        return pautaRepositorio.save(pauta);
     }
 }

@@ -1,8 +1,8 @@
 
 package com.dbserver.desafiovotacao.repository;
 
+import com.dbserver.desafiovotacao.dto.AssembleiaRequest;
 import com.dbserver.desafiovotacao.model.Assembleia;
-import com.dbserver.desafiovotacao.resource.AssembleiaResource;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -13,5 +13,5 @@ import org.springframework.stereotype.Repository;
 public interface AssembleiaRepositorio extends CrudRepository<Assembleia, UUID> {
     @Override
     Optional<Assembleia> findById(UUID id) throws DataAccessException;
-    public AssembleiaResource save(AssembleiaResource pautaResource);
+    Assembleia save(Assembleia assembleia);
 }

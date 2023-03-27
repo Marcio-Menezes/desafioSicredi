@@ -2,5 +2,5 @@
 package com.dbserver.desafiovotacao.enums;
 
 public enum VotoEnum {
-    SIM, NAO
+    SIM, NAO, AUTORIA
 }

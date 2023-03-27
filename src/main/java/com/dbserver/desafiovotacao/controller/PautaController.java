@@ -1,10 +1,15 @@
 
 package com.dbserver.desafiovotacao.controller;
 
+import com.dbserver.desafiovotacao.dto.ClienteRequest;
+import com.dbserver.desafiovotacao.dto.PautaRequest;
+import com.dbserver.desafiovotacao.dto.PautaResponse;
 import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
 import com.dbserver.desafiovotacao.service.PautaService;
 import jakarta.validation.Valid;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,33 +29,56 @@ public class PautaController {
     }
 
     @RequestMapping(method = RequestMethod.POST, produces = "application/json")
-    public ResponseEntity<Pauta> criarPauta(@Valid @RequestBody Pauta pauta, BindingResult bindingResult) {
+    public ResponseEntity<Pauta> criarPauta(@Valid @RequestBody PautaRequest pautaRequest, BindingResult bindingResult) {
 
-        Optional<Pauta> criarNovaPauta = Optional.of(pauta);
-        if(bindingResult.hasErrors()|| criarNovaPauta.isEmpty()){
-            return new ResponseEntity<>(pauta, HttpStatus.BAD_REQUEST);
-        }
-        return new ResponseEntity<>(pautaService.salvarPauta(pauta), HttpStatus.CREATED);
+        return new ResponseEntity<>(pautaService.salvarPauta(pautaRequest), HttpStatus.CREATED);
     }
 
     @GetMapping("/numeroassociados/{id}")
     public ResponseEntity<Integer> totalVotantes(@PathVariable UUID id) {
         return new ResponseEntity<>(this.pautaService.totalVotantes(id), HttpStatus.OK);
     }
-    // Modificar, pois só mostra uma unica pauta por hash
-    @GetMapping("/pautas")
+    @GetMapping("/mostrartodas")
     public ResponseEntity<Iterable<Pauta>> mostrarPauta() {
         return new ResponseEntity<>(this.pautaService.mostraPautas(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Pauta> encontrarPautaPorId(@PathVariable UUID id) {
+    public ResponseEntity<PautaResponse> encontrarPautaPorId(@PathVariable UUID id) {
+        Optional<Pauta> pauta = pautaService.encontrarPautaPorID(id);
+        PautaResponse resposta;
+        if (pauta.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }else{
+            resposta = new PautaResponse(pauta.get());
+        }
+        return new ResponseEntity<>(resposta, HttpStatus.OK);
+        
+    }
+
+    @GetMapping("/associados/{id}")
+    public ResponseEntity<List<Votante>> encontrarVotantesNaPauta(@PathVariable UUID id) {
         Optional<Pauta> pauta = pautaService.encontrarPautaPorID(id);
         if (pauta.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(pauta.get(), HttpStatus.OK);
-        
+        return new ResponseEntity<>(pauta.get().getAssociados(), HttpStatus.OK);
+
+    }
+
+    @PostMapping("/adicionavotante/{hash}")
+    public ResponseEntity<Pauta> adicionaVotanteNaPauta(@PathVariable String hash, @RequestBody ClienteRequest clienteRequest) {
+        return new ResponseEntity<>(pautaService.adicionarAssociado(hash, clienteRequest), HttpStatus.OK);
+    }
+
+    @GetMapping("/finaliza/{hash}")
+    public ResponseEntity<Pauta> finalizaPauta(@PathVariable String hash) {
+        Optional<Pauta> pauta = pautaService.encontrarPautaPorHash(hash);
+        if (pauta.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(pautaService.finalizarPauta(hash), HttpStatus.OK);
+
     }
 
 

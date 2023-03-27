@@ -1,7 +1,12 @@
 
 package com.dbserver.desafiovotacao.controller;
 
+import com.dbserver.desafiovotacao.dto.PautaResponse;
+import com.dbserver.desafiovotacao.dto.VotanteRequest;
+import com.dbserver.desafiovotacao.dto.VotanteResponse;
+import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
+import com.dbserver.desafiovotacao.service.PautaServiceImplementacao;
 import com.dbserver.desafiovotacao.service.VotanteServiceImplementacao;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,37 +26,39 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/votante")
 public class VotanteController {
     private final VotanteServiceImplementacao votanteService;
+	private final PautaServiceImplementacao pautaService;
 
 	@Autowired
-	public VotanteController(VotanteServiceImplementacao votanteService) {
+	public VotanteController(VotanteServiceImplementacao votanteService, PautaServiceImplementacao pautaService) {
 		this.votanteService = votanteService;
+		this.pautaService = pautaService;
 	}
         
         @RequestMapping(method = RequestMethod.POST, produces = "application/json")
-	public ResponseEntity<Votante> criarVotante(@RequestBody @Validated Votante votante, BindingResult bindingResult) {
+	public ResponseEntity<Votante> criarVotante(@RequestBody @Validated VotanteRequest votanteRequest, BindingResult bindingResult) {
 
-		Optional<Votante> criarVotante = Optional.of(votante);
-
-		if (bindingResult.hasErrors() || criarVotante.isEmpty()) {
-			return new ResponseEntity<>(votante, HttpStatus.BAD_REQUEST);
+		if (bindingResult.hasErrors()) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
-		return new ResponseEntity<>(votanteService.salvarVotante(votante), HttpStatus.CREATED);
+
+		return new ResponseEntity<>(votanteService.salvarVotante(votanteRequest), HttpStatus.CREATED);
 	}
         
         @GetMapping("/{id}")
-	public ResponseEntity<Votante> procuraVotante(@PathVariable UUID id) {
+	public ResponseEntity<VotanteResponse> procuraVoto(@PathVariable UUID id) {
 
-		Optional<Votante> associado;
-		associado = votanteService.findById(id);
-
+		Optional<Votante> associado = votanteService.encontrarVotantePorID(id);
+		VotanteResponse resposta;
 		if (associado.isEmpty()) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}else{
+			resposta = new VotanteResponse(associado.get());
 		}
-		return new ResponseEntity<>(associado.get(), HttpStatus.OK);
+		return new ResponseEntity<>(resposta, HttpStatus.OK);
 	}
         
-        @GetMapping("/totalvotantes")
-	public Integer totalVotantes() {
+        @GetMapping("/total")
+	public long totalVotantes() {
 		return this.votanteService.totalVotantes();
 	}
 }
