@@ -4,9 +4,9 @@ package com.dbserver.desafiovotacao.controller;
 import com.dbserver.desafiovotacao.dto.VotanteRequest;
 import com.dbserver.desafiovotacao.dto.VotanteResponse;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
+import com.dbserver.desafiovotacao.exception.FalhaBuscaException;
 import com.dbserver.desafiovotacao.model.Votante;
-import com.dbserver.desafiovotacao.service.VotanteService;
-import com.dbserver.desafiovotacao.service.VotanteServiceImplementacao;
+import com.dbserver.desafiovotacao.service.implementacao.VotanteServiceImplementacao;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,7 +23,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -56,11 +56,12 @@ public class VotanteControllerIT {
 
         ObjectMapper mapper = new ObjectMapper();
         String novoVotante = mapper.writeValueAsString(votanteResponse);
-        this.mockito.perform(post("/votante")
+        this.mockito.perform(post("/voto")
                         .content(novoVotante)
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isCreated());
+        verify(votanteService, times(1)).salvarVotante(votanteRequest);
     }
 
     @Test
@@ -71,11 +72,12 @@ public class VotanteControllerIT {
         given(votanteService.salvarVotante(novoVotanteRequest)).willReturn(novoVotante);
         ObjectMapper mapper = new ObjectMapper();
         String falha = mapper.writeValueAsString(novoVotanteRequest);
-        this.mockito.perform(post("/votante")
+        this.mockito.perform(post("/voto")
                         .content(falha)
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
+        verify(votanteService, times(0)).salvarVotante(novoVotanteRequest);
     }
     
     @Test
@@ -87,30 +89,33 @@ public class VotanteControllerIT {
 		ObjectMapper mapper = new ObjectMapper();
 		String votanteComoJSON = mapper.writeValueAsString(votanteResponse);
 
-		mockito.perform(get("/votante/" + votante.getId()).content(votanteComoJSON)
+		mockito.perform(get("/voto/" + votante.getId()).content(votanteComoJSON)
 				.accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
 				.andExpect(status().isOk()).andExpect(content().json(votanteComoJSON));
+        verify(votanteService, times(1)).encontrarVotantePorID(votante.getId());
     }
     
     @Test
     @DisplayName("Teste de procurar um votante invalido")
     public void testaProcuraVotanteInvalido() throws Exception{
         UUID idInvalido = UUID.randomUUID();
-        given(votanteService.encontrarVotantePorID(idInvalido)).willReturn(Optional.empty());
+        given(votanteService.encontrarVotantePorID(idInvalido)).willThrow(FalhaBuscaException.class);
 
-		mockito.perform(get("/votante/" + idInvalido)
+		mockito.perform(get("/voto/" + idInvalido)
 				.accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
 				.andExpect(status().isNotFound());
+        verify(votanteService, times(1)).encontrarVotantePorID(idInvalido);
     }
     @Test
     @DisplayName("Teste para retornar o total de votantes")
     public void testTotalVotantes() throws Exception{
         long resultado = 1;
         given(votanteService.totalVotantes()).willReturn(resultado);
-        this.mockito.perform(get("/votante/total")
+        this.mockito.perform(get("/voto/total")
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk());
+        verify(votanteService, times(1)).totalVotantes();
     }
     
 }

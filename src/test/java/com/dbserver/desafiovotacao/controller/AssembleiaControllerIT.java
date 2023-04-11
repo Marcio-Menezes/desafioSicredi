@@ -1,19 +1,24 @@
 
 package com.dbserver.desafiovotacao.controller;
 
+
 import com.dbserver.desafiovotacao.dto.AssembleiaRequest;
 import com.dbserver.desafiovotacao.dto.AssembleiaResponse;
 import com.dbserver.desafiovotacao.dto.ClienteRequest;
 import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
+import com.dbserver.desafiovotacao.exception.FalhaBuscaException;
 import com.dbserver.desafiovotacao.model.Assembleia;
 import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
-import com.dbserver.desafiovotacao.service.AssembleiaServiceImplementacao;
+import com.dbserver.desafiovotacao.service.implementacao.AssembleiaServiceImplementacao;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,9 +28,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -38,43 +48,47 @@ public class AssembleiaControllerIT {
     @Autowired
     MockMvc mockito;
 
+    @Autowired private final ObjectMapper mapper = new ObjectMapper();
+    private String retornoJSON;
+
     @MockBean
     private AssembleiaServiceImplementacao assembleiaService;
 
     AssembleiaRequest assembleiaRequest = new AssembleiaRequest("teste unitario");
-    AssembleiaResponse assembleiaResponse;
-    Assembleia assembleia;
+    Assembleia assembleia = new Assembleia();
+
     Pauta pauta = new Pauta();
     Votante votante = new Votante();
     Votante votanteAutor = new Votante();
-    
+
+    AssembleiaResponse assembleiaResponse;
+
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws JsonProcessingException {
         votante = Votante.builder().id(UUID.randomUUID()).idVotante("votante1").voto(VotoEnum.SIM).build();
         votanteAutor = Votante.builder().id(UUID.randomUUID()).idVotante("autoria1").voto(VotoEnum.AUTORIA).build();
-        pauta = Pauta.builder().id(UUID.randomUUID()).titulo("Teste").descricao("Esse é um teste unitário").autorPauta(votanteAutor).hash("2h-23bh5").build();
-        pauta.setAssociados(new ArrayList<>());
+        pauta = Pauta.builder().id(UUID.randomUUID()).titulo("Teste").descricao("Esse é um teste unitário").associados(new ArrayList<>()).autorPauta(votanteAutor).hash("2h-23bh5").build();
         pauta.getAssociados().add(votante);
-        
-        assembleia = Assembleia.builder().id(UUID.randomUUID()).nomeAssembleia(assembleiaRequest.nomeAssembleia()).build();
-        assembleia.setListaPauta(new ArrayList<>());
+        assembleia = Assembleia.builder().id(UUID.randomUUID()).nomeAssembleia("Teste de Assembleia").aberturaAssembleia(LocalDateTime.now()).listaPauta(new ArrayList<>()).nomeAssembleia("Teste Assembleia").build();
         assembleia.getListaPauta().add(pauta);
         assembleiaResponse = new AssembleiaResponse(assembleia);
+        retornoJSON = mapper.writeValueAsString(assembleiaResponse);
     }
     
     @Test
     @DisplayName("Teste de Criar uma assembleia")
     public void testCriarAssembleia() throws Exception {
-
         given(assembleiaService.salvarAssembleia(assembleiaRequest)).willReturn(assembleia);
 
         ObjectMapper mapper = new ObjectMapper();
-        String novaAssembleia = mapper.writeValueAsString(assembleia);
+        mapper.registerModule(new JavaTimeModule());
+        String novaAssembleia = mapper.writeValueAsString(assembleiaRequest);
         this.mockito.perform(post("/api")
                 .content(novaAssembleia)
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isCreated());
+        verify(assembleiaService, times(1)).salvarAssembleia(assembleiaRequest);
     }
 
     @Test
@@ -91,6 +105,7 @@ public class AssembleiaControllerIT {
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
+        verify(assembleiaService, times(0)).salvarAssembleia(novaAssembleiaRequest);
     }
 
     @Test
@@ -106,6 +121,7 @@ public class AssembleiaControllerIT {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarAssembleiaJSON))
                         .andExpect(status().isOk());
+        verify(assembleiaService, times(1)).adicionarPauta(assembleia.getId(), clienteRequest);
     }
 
     @Test
@@ -120,6 +136,7 @@ public class AssembleiaControllerIT {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarAssembleiaJSON))
                 .andExpect(status().isOk());
+        verify(assembleiaService, times(1)).finalizarAssembleia(assembleia.getId());
     }
 
     @Test
@@ -134,6 +151,7 @@ public class AssembleiaControllerIT {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarAssembleiaJSON))
                 .andExpect(status().isOk());
+        verify(assembleiaService, times(1)).finalizarAssembleia(assembleia.getId());
     }
 
     @Test
@@ -148,34 +166,41 @@ public class AssembleiaControllerIT {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarAssembleiaJSON))
                 .andExpect(status().isOk());
+        verify(assembleiaService, times(1)).mostraPautas(assembleia.getId());
     }
 
     @Test
     @DisplayName("Teste de todas as assembleias")
     public void testaMostrarTodasAsAssembleias() throws Exception {
+        Pageable pageable = Pageable.ofSize(10);
         List<AssembleiaResponse> listaAssembleias = Arrays.asList(assembleiaResponse);
-        given(assembleiaService.mostrarAssembleias()).willReturn(listaAssembleias);
-        ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(assembleiaRequest);
-        this.mockito.perform(get("/api/todas")
+        Page<AssembleiaResponse> pageAssembleias = new PageImpl<>(listaAssembleias);
+        given(assembleiaService.mostrarAssembleias(pageable)).willReturn(pageAssembleias);
+        String encontrarAssembleiaJSON = mapper.writeValueAsString(pageAssembleias);
+        this.mockito.perform(get("/api/mostrarassembleias")
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarAssembleiaJSON))
                 .andExpect(status().isOk());
+        verify(assembleiaService).mostrarAssembleias(pageable);
     }
 
     @Test
     @DisplayName("Teste para exibir toda a assembleia")
     public void testaMostrarTudo() throws Exception {
+        Pageable pageable = Pageable.ofSize(10);
         List<Assembleia> listaAssembleias = Arrays.asList(assembleia);
-        given(assembleiaService.mostraTudo()).willReturn(listaAssembleias);
+        Page<Assembleia> pageAssembleias = new PageImpl<>(listaAssembleias);
+        given(assembleiaService.mostraTudo(pageable)).willReturn(pageAssembleias);
         ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(assembleia);
+        mapper.registerModule(new JavaTimeModule());
+        String encontrarAssembleiaJSON = mapper.writeValueAsString(pageAssembleias);
         this.mockito.perform(get("/api/tudo")
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarAssembleiaJSON))
                 .andExpect(status().isOk());
+        verify(assembleiaService, times(1)).mostraTudo(pageable);
     }
 
     @Test
@@ -183,24 +208,24 @@ public class AssembleiaControllerIT {
     public void testProcuraAssembleia() throws Exception {
 
         given(assembleiaService.encontrarAssembleiaPorID(assembleia.getId())).willReturn(Optional.of(assembleia));
-        ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(assembleiaResponse);
         this.mockito.perform(get("/api/" + assembleia.getId())
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andExpect(content().json(encontrarAssembleiaJSON))
+                .andExpect(content().json(retornoJSON))
                 .andExpect(status().isOk());
+        verify(assembleiaService, times(1)).encontrarAssembleiaPorID(assembleia.getId());
     }
 
     @Test
     @DisplayName("Teste de procurar uma assembleia inexistente")
     public void testProcuraAssembleiaInexistente() throws Exception {
         UUID assembleiaNula = UUID.randomUUID();
-        given(assembleiaService.encontrarAssembleiaPorID(assembleiaNula)).willReturn(Optional.empty());
+        given(assembleiaService.encontrarAssembleiaPorID(assembleiaNula)).willThrow(FalhaBuscaException.class);
         this.mockito.perform(get("/api/" + assembleiaNula)
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound());
+        verify(assembleiaService).encontrarAssembleiaPorID(assembleiaNula);
     }
 
     @Test
@@ -212,6 +237,7 @@ public class AssembleiaControllerIT {
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk());
+        verify(assembleiaService, times(1)).totalPautas(assembleia.getId());
 
     }
 

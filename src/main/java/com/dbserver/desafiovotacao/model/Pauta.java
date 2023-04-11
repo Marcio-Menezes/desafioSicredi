@@ -3,6 +3,7 @@ package com.dbserver.desafiovotacao.model;
 import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
 import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
 import java.io.Serializable;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -34,6 +35,10 @@ public class Pauta implements Serializable {
     @JoinTable(name = "pauta_votantes", joinColumns = @JoinColumn(name = "pauta_id"),
             inverseJoinColumns = @JoinColumn(name = "votantes_id"))
     private List<Votante> associados = new ArrayList<>();
+    @Column(name = "inicio_votacao")
+    private LocalTime aberturaPauta;
+    @Column(name = "termino_votacao")
+    private LocalTime fechamentoPauta;
     @Column(name = "resultado")
     @Enumerated(EnumType.STRING)
     private PautaResultadoEnum resultado;

@@ -6,7 +6,10 @@ import com.dbserver.desafiovotacao.dto.AssembleiaResponse;
 import com.dbserver.desafiovotacao.dto.ClienteRequest;
 import com.dbserver.desafiovotacao.enums.AssembleiaEnum;
 import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
+import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
+import com.dbserver.desafiovotacao.exception.AcaoInvalidaException;
+import com.dbserver.desafiovotacao.exception.FalhaBuscaException;
 import com.dbserver.desafiovotacao.model.Assembleia;
 import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
@@ -15,6 +18,7 @@ import com.dbserver.desafiovotacao.repository.AssembleiaRepositorio;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import com.dbserver.desafiovotacao.service.implementacao.AssembleiaServiceImplementacao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,13 +26,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -46,25 +53,22 @@ public class AssembleiaServiceImplementacaoIT {
     Votante votante;
     Votante votanteAutor;
 
-    AssembleiaRequest assembleiaRequest = new AssembleiaRequest("teste unitario");
-
     @BeforeEach
     public void setUp() {
 
         votante = Votante.builder().id(UUID.randomUUID()).idVotante("votante1").voto(VotoEnum.SIM).build();
         votanteAutor = Votante.builder().id(UUID.randomUUID()).idVotante("autoria1").voto(VotoEnum.AUTORIA).build();
-        pauta = Pauta.builder().id(UUID.randomUUID()).titulo("Teste").descricao("Esse é um teste unitário").autorPauta(votanteAutor).hash("2h-23bh5").build();
-        pauta.setAssociados(new ArrayList<>());
+        pauta = Pauta.builder().id(UUID.randomUUID()).titulo("Teste").descricao("Esse é um teste unitário").autorPauta(votanteAutor).associados(new ArrayList<>()).hash("2h-23bh5").build();
         pauta.getAssociados().add(votante);
-        assembleia = Assembleia.builder().nomeAssembleia(assembleiaRequest.nomeAssembleia()).status(AssembleiaEnum.MOVIMENTO).listaPauta(new ArrayList<>()).build();
+        assembleia = Assembleia.builder().id(UUID.randomUUID()).nomeAssembleia("Teste de Assembleia").status(AssembleiaEnum.MOVIMENTO).listaPauta(new ArrayList<>()).build();
     }
 
 
     @Test
     @DisplayName("Teste para retornar uma assembleia valida")
     public void testEncontrarAssembleiaPorIDSucesso() {
-        given(assembleiaService.encontrarAssembleiaPorID(assembleia.getId())).willReturn(Optional.of(assembleia));
-		Optional<Assembleia> resposta = assembleiaService.encontrarAssembleiaPorID(assembleia.getId());
+        given(assembleiaRepositorio.findById(assembleia.getId())).willReturn(Optional.of(assembleia));
+        Optional<Assembleia> resposta = assembleiaService.encontrarAssembleiaPorID(assembleia.getId());
 		assertEquals(assembleia, resposta.get());
     }
     
@@ -72,50 +76,54 @@ public class AssembleiaServiceImplementacaoIT {
     @DisplayName("Teste para retornar uma assembleia invalida")
     public void testEncontrarAssembleiaPorIDFalha() {
         UUID idRandom = UUID.randomUUID();
-        given(assembleiaService.encontrarAssembleiaPorID(idRandom)).willReturn(Optional.empty());
-		Optional<Assembleia> resposta = assembleiaService.encontrarAssembleiaPorID(idRandom);
-		assertEquals(Optional.empty(), resposta);
+        given(assembleiaRepositorio.findById(idRandom)).willReturn(Optional.empty());
+		assertThrows(FalhaBuscaException.class, () -> assembleiaService.encontrarAssembleiaPorID(idRandom));
     }
 
     @Test
     @DisplayName("Teste para salvar uma assembleia")
     public void testSalvarAssembleia() {
-        when(assembleiaRepositorio.save(assembleia)).thenReturn(assembleia);
-        assembleia.setAberturaAssembleia(LocalDateTime.now());
-		assembleiaService.salvarAssembleia(assembleiaRequest);
-		verify(assembleiaRepositorio, times(1)).save(assembleia);
+        AssembleiaRequest novaAssembleiaRequest = new AssembleiaRequest("Teste Unitário");
+        Assembleia novaAssembleia = Assembleia.builder().nomeAssembleia(novaAssembleiaRequest.nomeAssembleia())
+                .aberturaAssembleia(LocalDateTime.now())
+                .status(AssembleiaEnum.MOVIMENTO)
+                .listaPauta(new ArrayList<>()).build();
+        given(assembleiaService.salvarAssembleia(novaAssembleiaRequest)).willReturn(novaAssembleia);
+        assembleiaService.salvarAssembleia(novaAssembleiaRequest);
+		verify(assembleiaRepositorio, times(1)).save(novaAssembleia);
     }
 
     @Test
     @DisplayName("Teste para retornar o total de pautas de uma assembleia")
     public void testTotalPautas(){
+        given(assembleiaRepositorio.findById(assembleia.getId())).willReturn(Optional.of(assembleia));
         assembleia.getListaPauta().add(pauta);
-        given(assembleiaService.encontrarAssembleiaPorID(assembleia.getId())).willReturn(Optional.of(assembleia));
         Integer result = assembleiaService.totalPautas(assembleia.getId());
         assertEquals(1,result);
     }
     @Test
-    @DisplayName("Teste para retornar o total de pautas de uma assembleia vazia")
-    public void testTotalPautasVazia(){
+    @DisplayName("Teste para retornar o total de pautas de uma assembleia inexistente")
+    public void testTotalPautasDeAssembleiaNula(){
         UUID idInvalido = UUID.randomUUID();
-        given(assembleiaService.encontrarAssembleiaPorID(idInvalido)).willReturn(Optional.empty());
-        Integer result = assembleiaService.totalPautas(idInvalido);
-        assertEquals(0,result);
+        given(assembleiaRepositorio.findById(idInvalido)).willReturn(Optional.empty());
+        assertThrows(FalhaBuscaException.class, () -> assembleiaService.totalPautas(idInvalido));
     }
 
     @Test
     @DisplayName("Teste para mostrar tudo")
     public void testaMostrarTudo(){
         List<Assembleia> listaAssembleias = Arrays.asList(assembleia);
-        given(assembleiaRepositorio.findAll()).willReturn(listaAssembleias);
-        Iterable<Assembleia> resposta = assembleiaService.mostraTudo();
-        assertEquals(listaAssembleias, resposta);
+        Page<Assembleia> assembleiaPage = new PageImpl<>(listaAssembleias);
+        Pageable pageable = Pageable.ofSize(10);
+        given(assembleiaRepositorio.findAll(pageable)).willReturn(assembleiaPage);
+        Page<Assembleia> resposta = assembleiaService.mostraTudo(pageable);
+        assertEquals(assembleiaPage, resposta);
     }
 
     @Test
     @DisplayName("Teste de mostrar todas as pautas")
     public void testaMostrarPautas(){
-        given(assembleiaService.encontrarAssembleiaPorID(assembleia.getId())).willReturn(Optional.of(assembleia));
+        given(assembleiaRepositorio.findById(assembleia.getId())).willReturn(Optional.of(assembleia));
         List<Pauta> listaPauta = assembleia.getListaPauta();
         Iterable<Pauta> resposta = assembleiaService.mostraPautas(assembleia.getId());
         assertEquals(listaPauta, resposta);
@@ -128,7 +136,7 @@ public class AssembleiaServiceImplementacaoIT {
         Pauta novaPauta = Pauta.builder().id(UUID.randomUUID()).titulo("Nova Pauta").autorPauta(votanteAutor).hash("378763").build();
         ClienteRequest clienteRequest  = new ClienteRequest(novaPauta.getId());
         Assembleia novaAssembleia = Assembleia.builder().id(UUID.randomUUID()).listaPauta(new ArrayList<>()).build();
-        given(assembleiaService.encontrarAssembleiaPorID(novaAssembleia.getId())).willReturn(Optional.of(novaAssembleia));
+        given(assembleiaRepositorio.findById(novaAssembleia.getId())).willReturn(Optional.of(novaAssembleia));
         given(pautaService.encontrarPautaPorID(clienteRequest.id())).willReturn(Optional.of(novaPauta));
         assembleiaService.adicionarPauta(novaAssembleia.getId(),clienteRequest);
         assertEquals(1,novaAssembleia.getListaPauta().size());
@@ -143,33 +151,34 @@ public class AssembleiaServiceImplementacaoIT {
         UUID idInvalido = UUID.randomUUID();
         ClienteRequest clienteRequest  = new ClienteRequest(idInvalido);
         Assembleia novaAssembleia = Assembleia.builder().id(UUID.randomUUID()).listaPauta(new ArrayList<>()).build();
-        given(assembleiaService.encontrarAssembleiaPorID(novaAssembleia.getId())).willReturn(Optional.of(novaAssembleia));
-        given(pautaService.encontrarPautaPorID(clienteRequest.id())).willReturn(Optional.empty());
-        assembleiaService.adicionarPauta(novaAssembleia.getId(),clienteRequest);
-        assertEquals(0,novaAssembleia.getListaPauta().size());
-        assertTrue(novaAssembleia.getListaPauta().isEmpty());
+        given(assembleiaRepositorio.findById(novaAssembleia.getId())).willReturn(Optional.of(novaAssembleia));
+        given(pautaService.encontrarPautaPorID(clienteRequest.id())).willThrow(FalhaBuscaException.class);
+        assertThrows(FalhaBuscaException.class, () -> assembleiaService.adicionarPauta(novaAssembleia.getId(),clienteRequest));
         verify(assembleiaRepositorio, times(0)).save(novaAssembleia);
 
     }
 
     @Test
     @DisplayName("Teste de todas as assembleias")
-    public void testaMostrarTodasAsAssembleias(){
+    public void testaMostrarTodasAsAssembleias() {
+        Pageable pageable = Pageable.ofSize(10);
         AssembleiaResponse assembleiaResponse = new AssembleiaResponse(assembleia);
-        List<AssembleiaResponse> listaAssembleias = Arrays.asList(assembleiaResponse);
-        given(assembleiaService.mostrarAssembleias()).willReturn(listaAssembleias);
-        assertEquals(1,listaAssembleias.size());
-        assertEquals(assembleiaResponse,listaAssembleias.get(0));
+        List<Assembleia> lista = Arrays.asList(assembleia);
+        Page<Assembleia> assembleiaPage = new PageImpl<>(lista);
+        given(assembleiaRepositorio.findAll(pageable)).willReturn(assembleiaPage);
+        Page<AssembleiaResponse> resultado = assembleiaService.mostrarAssembleias(pageable);
+        assertEquals(1, resultado.getTotalElements());
+        assertEquals(assembleiaResponse, resultado.getContent().get(0));
     }
 
     @Test
     @DisplayName("Teste de finalizar uma Assembleia com Pauta finalizada")
     public void testaFinalizaAssembleiaSucesso(){
-        Pauta novaPauta = Pauta.builder().id(UUID.randomUUID()).titulo("Nova Pauta").autorPauta(votanteAutor).hash("378763").andamento(PautaAndamentoEnum.CONCLUIDO).build();
+        Pauta novaPauta = Pauta.builder().id(UUID.randomUUID()).titulo("Nova Pauta").autorPauta(votanteAutor).hash("378763").resultado(PautaResultadoEnum.APROVADO).andamento(PautaAndamentoEnum.CONCLUIDO).build();
         Assembleia novaAssembleia = Assembleia.builder().id(UUID.randomUUID()).nomeAssembleia("Nova Assembleia")
                 .aberturaAssembleia(LocalDateTime.now()).listaPauta(new ArrayList<>()).status(AssembleiaEnum.MOVIMENTO).build();
         novaAssembleia.getListaPauta().add(novaPauta);
-        given(assembleiaService.encontrarAssembleiaPorID(novaAssembleia.getId())).willReturn(Optional.of(novaAssembleia));
+        given(assembleiaRepositorio.findById(novaAssembleia.getId())).willReturn(Optional.of(novaAssembleia));
         assembleiaService.finalizarAssembleia(novaAssembleia.getId());
         assertTrue(novaAssembleia.getStatus().equals(AssembleiaEnum.FINALIZADO));
     }
@@ -181,18 +190,16 @@ public class AssembleiaServiceImplementacaoIT {
         Assembleia novaAssembleia = Assembleia.builder().id(UUID.randomUUID()).nomeAssembleia("Nova Assembleia")
                 .aberturaAssembleia(LocalDateTime.now()).listaPauta(new ArrayList<>()).status(AssembleiaEnum.MOVIMENTO).build();
         novaAssembleia.getListaPauta().add(novaPauta);
-        given(assembleiaService.encontrarAssembleiaPorID(novaAssembleia.getId())).willReturn(Optional.of(novaAssembleia));
-        assembleiaService.finalizarAssembleia(novaAssembleia.getId());
-        assertTrue(novaAssembleia.getStatus().equals(AssembleiaEnum.MOVIMENTO));
+        given(assembleiaRepositorio.findById(novaAssembleia.getId())).willReturn(Optional.of(novaAssembleia));
+        assertThrows(AcaoInvalidaException.class, () -> assembleiaService.finalizarAssembleia(novaAssembleia.getId()));
     }
 
     @Test
     @DisplayName("Teste de finalizar uma Assembleia Inexistente")
     public void testaFinalizaAssembleiaInexistente(){
         UUID idInvalido = UUID.randomUUID();
-        given(assembleiaService.encontrarAssembleiaPorID(idInvalido)).willReturn(Optional.empty());
-        Assembleia resposta = assembleiaService.finalizarAssembleia(idInvalido);
-        assertTrue(resposta == null);
+        given(assembleiaRepositorio.findById(idInvalido)).willThrow(FalhaBuscaException.class);
+        assertThrows(FalhaBuscaException.class, () -> assembleiaService.finalizarAssembleia(idInvalido));
     }
     
 }

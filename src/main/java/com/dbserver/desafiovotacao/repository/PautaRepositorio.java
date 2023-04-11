@@ -5,6 +5,8 @@ import com.dbserver.desafiovotacao.model.Pauta;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 @Repository
@@ -15,4 +17,5 @@ public interface PautaRepositorio extends CrudRepository<Pauta, UUID> {
     Optional<Pauta> findByHash(String hash) throws DataAccessException;
     Pauta save(Pauta pauta);
 
+    Page<Pauta> findAll(Pageable pageable);
 }

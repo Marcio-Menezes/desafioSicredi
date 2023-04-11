@@ -1,0 +1,8 @@
+com\dbserver\desafiovotacao\controller\PautaControllerIT.class
+com\dbserver\desafiovotacao\service\PautaServiceImplementacaoIT.class
+com\dbserver\desafiovotacao\service\VotanteServiceImplementacaoIT.class
+com\dbserver\desafiovotacao\DesafioVotacaoTest.class
+com\dbserver\desafiovotacao\service\AssembleiaServiceImplementacaoIT.class
+com\dbserver\desafiovotacao\controller\VotanteControllerIT.class
+com\dbserver\desafiovotacao\controller\AssembleiaControllerIT.class
+com\dbserver\desafiovotacao\base\BaseMockada.class

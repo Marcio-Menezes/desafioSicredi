@@ -12,6 +12,8 @@ import com.dbserver.desafiovotacao.repository.VotanteRepositorio;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.dbserver.desafiovotacao.service.implementacao.VotanteServiceImplementacao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

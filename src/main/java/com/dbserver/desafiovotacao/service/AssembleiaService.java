@@ -11,14 +11,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 
 public interface AssembleiaService {
-    Optional<Assembleia> encontrarAssembleiaPorID(UUID id) throws DataAccessException;
-    Assembleia salvarAssembleia(AssembleiaRequest assembleiaRequest) throws DataAccessException;
+    Optional<Assembleia> encontrarAssembleiaPorID(UUID id);
+    Assembleia salvarAssembleia(AssembleiaRequest assembleiaRequest);
     Integer totalPautas(UUID id);
-    Iterable<Assembleia> mostraTudo();
-    List<AssembleiaResponse> mostrarAssembleias();
+    Page<Assembleia> mostraTudo(Pageable pageable);
+    Page<AssembleiaResponse> mostrarAssembleias(Pageable pageable);
     Iterable<Pauta> mostraPautas(UUID id);
     Assembleia adicionarPauta(UUID idAssembleia, ClienteRequest clienteRequest);
     Assembleia finalizarAssembleia(UUID id);

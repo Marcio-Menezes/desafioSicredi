@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -39,29 +42,20 @@ public class PautaController {
         return new ResponseEntity<>(this.pautaService.totalVotantes(id), HttpStatus.OK);
     }
     @GetMapping("/mostrartodas")
-    public ResponseEntity<Iterable<Pauta>> mostrarPauta() {
-        return new ResponseEntity<>(this.pautaService.mostraPautas(), HttpStatus.OK);
+    public ResponseEntity<Page<Pauta>> mostrarPauta(@PageableDefault(size = 10) Pageable pageable) {
+        return new ResponseEntity<>(this.pautaService.mostraPautas(pageable), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PautaResponse> encontrarPautaPorId(@PathVariable UUID id) {
         Optional<Pauta> pauta = pautaService.encontrarPautaPorID(id);
-        PautaResponse resposta;
-        if (pauta.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }else{
-            resposta = new PautaResponse(pauta.get());
-        }
-        return new ResponseEntity<>(resposta, HttpStatus.OK);
+        return new ResponseEntity<>(new PautaResponse(pauta.get()), HttpStatus.OK);
         
     }
 
     @GetMapping("/associados/{id}")
     public ResponseEntity<List<Votante>> encontrarVotantesNaPauta(@PathVariable UUID id) {
         Optional<Pauta> pauta = pautaService.encontrarPautaPorID(id);
-        if (pauta.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
         return new ResponseEntity<>(pauta.get().getAssociados(), HttpStatus.OK);
 
     }
@@ -73,10 +67,6 @@ public class PautaController {
 
     @GetMapping("/finaliza/{hash}")
     public ResponseEntity<Pauta> finalizaPauta(@PathVariable String hash) {
-        Optional<Pauta> pauta = pautaService.encontrarPautaPorHash(hash);
-        if (pauta.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
         return new ResponseEntity<>(pautaService.finalizarPauta(hash), HttpStatus.OK);
 
     }

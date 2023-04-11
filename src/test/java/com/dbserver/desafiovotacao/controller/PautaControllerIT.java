@@ -4,13 +4,11 @@ package com.dbserver.desafiovotacao.controller;
 import com.dbserver.desafiovotacao.dto.ClienteRequest;
 import com.dbserver.desafiovotacao.dto.PautaRequest;
 import com.dbserver.desafiovotacao.dto.PautaResponse;
-import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
-import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
-import com.dbserver.desafiovotacao.model.Assembleia;
+import com.dbserver.desafiovotacao.exception.FalhaBuscaException;
 import com.dbserver.desafiovotacao.model.Pauta;
 import com.dbserver.desafiovotacao.model.Votante;
-import com.dbserver.desafiovotacao.service.PautaServiceImplementacao;
+import com.dbserver.desafiovotacao.service.implementacao.PautaServiceImplementacao;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.*;
@@ -24,10 +22,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -62,16 +63,17 @@ public class PautaControllerIT {
     @Test
     @DisplayName("Teste de Criar uma pauta")
     public void testCriarPauta() throws Exception {
-        PautaRequest pautaRequest = new PautaRequest("Titulo Teste", votanteAutor.getId(), "newhash");
+        PautaRequest pautaRequest = new PautaRequest("Titulo Teste", votanteAutor.getId(), "");
         given(pautaService.salvarPauta(pautaRequest)).willReturn(pauta);
 
         ObjectMapper mapper = new ObjectMapper();
-        String novaPauta = mapper.writeValueAsString(pautaResponse);
+        String novaPauta = mapper.writeValueAsString(pautaRequest);
         this.mockito.perform(post("/pauta")
                 .content(novaPauta)
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isCreated());
+        verify(pautaService, times(1)).salvarPauta(pautaRequest);
     }
     @Test
     @DisplayName("Teste verificar o total de votantes em uma pauta")
@@ -82,21 +84,24 @@ public class PautaControllerIT {
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk());
-
+        verify(pautaService, times(1)).totalVotantes(pauta.getId());
     }
 
     @Test
     @DisplayName("Teste para exibir todas as pautas")
     public void testaMostrarTodasPautas() throws Exception {
+        Pageable pageable = Pageable.ofSize(10);
         List<Pauta> listaPauta = Arrays.asList(pauta);
-        given(pautaService.mostraPautas()).willReturn(listaPauta);
+        Page<Pauta> pautaPage = new PageImpl<>(listaPauta);
+        given(pautaService.mostraPautas(pageable)).willReturn(pautaPage);
         ObjectMapper mapper = new ObjectMapper();
-        String encontrarPautaJSON = mapper.writeValueAsString(pautaResponse);
+        String encontrarPautaJSON = mapper.writeValueAsString(pautaPage);
         this.mockito.perform(get("/pauta/mostrartodas")
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarPautaJSON))
                 .andExpect(status().isOk());
+        verify(pautaService, times(1)).mostraPautas(pageable);
     }
 
     @Test
@@ -111,18 +116,20 @@ public class PautaControllerIT {
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(content().json(encontrarPautaJSON))
                 .andExpect(status().isOk());
+        verify(pautaService, times(1)).encontrarPautaPorID(pauta.getId());
     }
 
     @Test
     @DisplayName("Teste de procurar uma pauta invalida")
     public void testEncontrarPautaInvalida() throws Exception {
         UUID idInvalido = UUID.randomUUID();
-        given(pautaService.encontrarPautaPorID(idInvalido)).willReturn(Optional.empty());
+        given(pautaService.encontrarPautaPorID(idInvalido)).willThrow(FalhaBuscaException.class);
 
-        this.mockito.perform(get("/pauta/" + pauta.getId())
+        this.mockito.perform(get("/pauta/" + idInvalido)
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound());
+        verify(pautaService, times(1)).encontrarPautaPorID(idInvalido);
     }
 
     @Test
@@ -137,20 +144,19 @@ public class PautaControllerIT {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarPautaJSON))
                 .andExpect(status().isOk());
+        verify(pautaService, times(1)).encontrarPautaPorID(pauta.getId());
     }
 
     @Test
     @DisplayName("Teste de mostrar votantes em pauta invalida")
     public void testaMostrarVotantesEmPautaInexistente() throws Exception {
         UUID idInvalido = UUID.randomUUID();
-        given(pautaService.encontrarPautaPorID(idInvalido)).willReturn(Optional.empty());
-        ObjectMapper mapper = new ObjectMapper();
-        String encontrarPautaJSON = mapper.writeValueAsString(pautaResponse);
-        this.mockito.perform(get("/pauta/associados/" + pauta.getId())
+        given(pautaService.encontrarPautaPorID(idInvalido)).willThrow(FalhaBuscaException.class);
+        this.mockito.perform(get("/pauta/associados/" + idInvalido)
                         .accept(MediaType.APPLICATION_JSON_VALUE)
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(encontrarPautaJSON))
+                        .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound());
+        verify(pautaService, times(1)).encontrarPautaPorID(idInvalido);
     }
 
     @Test
@@ -166,6 +172,7 @@ public class PautaControllerIT {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarPautaJSON))
                 .andExpect(status().isOk());
+        verify(pautaService, times(1)).adicionarAssociado(pauta.getHash(), clienteRequest);
     }
 
     @Test
@@ -176,12 +183,13 @@ public class PautaControllerIT {
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk());
+        verify(pautaService).finalizarPauta(pauta.getHash());
     }
     @Test
     @DisplayName("Teste de finalizar uma Pauta com falha")
     public void testaFinalizaPautaFalha() throws Exception {
         String hashInvalido = "invalido";
-        given(pautaService.finalizarPauta(hashInvalido)).willReturn(pauta);
+        given(pautaService.finalizarPauta(hashInvalido)).willThrow(FalhaBuscaException.class);
         ObjectMapper mapper = new ObjectMapper();
         String encontrarPautaJSON = mapper.writeValueAsString(pautaResponse);
         this.mockito.perform(get("/pauta/finaliza/" + hashInvalido)
@@ -189,6 +197,7 @@ public class PautaControllerIT {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(encontrarPautaJSON))
                 .andExpect(status().isNotFound());
+        verify(pautaService, times(1)).finalizarPauta(hashInvalido);
     }
     
 }
