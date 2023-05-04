@@ -1,6 +1,7 @@
 
 package com.dbserver.desafiovotacao.service;
 
+import com.dbserver.desafiovotacao.controller.Inicializador;
 import com.dbserver.desafiovotacao.dto.AssembleiaRequest;
 import com.dbserver.desafiovotacao.dto.AssembleiaResponse;
 import com.dbserver.desafiovotacao.dto.ClienteRequest;
@@ -40,7 +41,7 @@ import org.springframework.data.domain.Pageable;
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Testar Assembleia Service")
-public class AssembleiaServiceImplementacaoIT {
+public class AssembleiaServiceImplementacaoUnitario {
     
     @Mock
     private AssembleiaRepositorio assembleiaRepositorio;
@@ -50,17 +51,14 @@ public class AssembleiaServiceImplementacaoIT {
     private AssembleiaServiceImplementacao assembleiaService;
     Assembleia assembleia;
     Pauta pauta;
-    Votante votante;
     Votante votanteAutor;
 
     @BeforeEach
     public void setUp() {
-
-        votante = Votante.builder().id(UUID.randomUUID()).idVotante("votante1").voto(VotoEnum.SIM).build();
-        votanteAutor = Votante.builder().id(UUID.randomUUID()).idVotante("autoria1").voto(VotoEnum.AUTORIA).build();
-        pauta = Pauta.builder().id(UUID.randomUUID()).titulo("Teste").descricao("Esse é um teste unitário").autorPauta(votanteAutor).associados(new ArrayList<>()).hash("2h-23bh5").build();
-        pauta.getAssociados().add(votante);
-        assembleia = Assembleia.builder().id(UUID.randomUUID()).nomeAssembleia("Teste de Assembleia").status(AssembleiaEnum.MOVIMENTO).listaPauta(new ArrayList<>()).build();
+        Inicializador inicializador = new Inicializador();
+        votanteAutor = inicializador.construirVotanteAutor();
+        pauta = inicializador.construirPauta();
+        assembleia = inicializador.construirAssembleia();
     }
 
 
@@ -97,7 +95,6 @@ public class AssembleiaServiceImplementacaoIT {
     @DisplayName("Teste para retornar o total de pautas de uma assembleia")
     public void testTotalPautas(){
         given(assembleiaRepositorio.findById(assembleia.getId())).willReturn(Optional.of(assembleia));
-        assembleia.getListaPauta().add(pauta);
         Integer result = assembleiaService.totalPautas(assembleia.getId());
         assertEquals(1,result);
     }

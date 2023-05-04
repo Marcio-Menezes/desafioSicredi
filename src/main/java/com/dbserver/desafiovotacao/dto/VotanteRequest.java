@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.NonNull;
 
 
-public record VotanteRequest(@NotBlank String codAssociado, @NonNull VotoEnum votoEnum) {
+public record VotanteRequest(@NotBlank String cpf, @NonNull VotoEnum votoEnum) {
 
 }

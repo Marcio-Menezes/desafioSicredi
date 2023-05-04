@@ -4,6 +4,7 @@
  */
 package com.dbserver.desafiovotacao.service;
 
+import com.dbserver.desafiovotacao.controller.Inicializador;
 import com.dbserver.desafiovotacao.dto.*;
 import com.dbserver.desafiovotacao.enums.PautaAndamentoEnum;
 import com.dbserver.desafiovotacao.enums.PautaResultadoEnum;
@@ -38,7 +39,7 @@ import org.springframework.data.domain.Pageable;
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Testar Pauta Service")
-public class PautaServiceImplementacaoIT {
+public class PautaServiceImplementacaoUnitario {
     
     @Mock
     private PautaRepositorio pautaRepositorio;
@@ -53,10 +54,9 @@ public class PautaServiceImplementacaoIT {
     
     @BeforeEach
     public void setUp() {
-        votante = Votante.builder().id(UUID.randomUUID()).idVotante("votante1").voto(VotoEnum.SIM).build();
-        votanteAutor = Votante.builder().id(UUID.randomUUID()).idVotante("autoria1").voto(VotoEnum.AUTORIA).build();
-        pauta = Pauta.builder().id(UUID.randomUUID()).titulo("Teste").descricao("Esse é um teste unitário").autorPauta(votanteAutor).associados(new ArrayList<>()).hash("2h-23bh5").build();
-        pauta.getAssociados().add(votante);
+        Inicializador inicializador = new Inicializador();
+        votanteAutor = inicializador.construirVotanteAutor();
+        pauta = inicializador.construirPauta();
         pautaRequest = new PautaRequest("Teste", votanteAutor.getId(), "");
 
     }
@@ -140,7 +140,7 @@ public class PautaServiceImplementacaoIT {
     @Test
     @DisplayName("Teste de adicionar uma novo votante a pauta")
     public void testaAdicionarAssociado() {
-        Votante novoVotante = Votante.builder().id(UUID.randomUUID()).idVotante("testeVot").voto(VotoEnum.SIM).build();
+        Votante novoVotante = Votante.builder().id(UUID.randomUUID()).cpf("testeVot").voto(VotoEnum.SIM).build();
         ClienteRequest clienteRequest  = new ClienteRequest(novoVotante.getId());
         Pauta novaPauta = Pauta.builder().id(UUID.randomUUID()).titulo("Nova Pauta").autorPauta(votanteAutor).hash("378763").associados(new ArrayList<>()).build();
         given(pautaRepositorio.findByHash(novaPauta.getHash())).willReturn(Optional.of(novaPauta));

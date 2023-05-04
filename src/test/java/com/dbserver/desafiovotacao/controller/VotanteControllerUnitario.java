@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Testar VotanteController")
-public class VotanteControllerIT {
+public class VotanteControllerUnitario {
     
     @Autowired
     MockMvc mockito;
@@ -44,20 +44,22 @@ public class VotanteControllerIT {
 
     @BeforeEach
     public void setUp() {
-        votante = Votante.builder().id(UUID.randomUUID()).idVotante("codTeste").voto(VotoEnum.NAO).build();
+        Inicializador inicializador = new Inicializador();
+        votante = inicializador.construirVotante();
         votanteResponse = new VotanteResponse(votante);
     }
 
     @Test
     @DisplayName("Teste de Criar um associado valido")
     public void testCriarAssociadoValido() throws Exception {
-        VotanteRequest votanteRequest = new VotanteRequest("codTeste", VotoEnum.NAO);
-        given(votanteService.salvarVotante(votanteRequest)).willReturn(votante);
-
+        VotanteRequest votanteRequest = new VotanteRequest("07385928030", VotoEnum.NAO);
+        Votante novoVotante = Votante.builder().cpf("07385928030").voto(VotoEnum.NAO).build();
+        given(votanteService.salvarVotante(votanteRequest)).willReturn(novoVotante);
+        VotanteResponse novoResponse = new VotanteResponse(novoVotante);
         ObjectMapper mapper = new ObjectMapper();
-        String novoVotante = mapper.writeValueAsString(votanteResponse);
+        String novoVotanteJSON = mapper.writeValueAsString(novoResponse);
         this.mockito.perform(post("/voto")
-                        .content(novoVotante)
+                        .content(novoVotanteJSON)
                         .accept(MediaType.APPLICATION_JSON_VALUE)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isCreated());
@@ -68,7 +70,7 @@ public class VotanteControllerIT {
     @DisplayName("Teste de Criar um associado invalido")
     public void testCriarAssociadoInvalido() throws Exception {
         VotanteRequest novoVotanteRequest = new VotanteRequest("", VotoEnum.SIM);
-        Votante novoVotante = Votante.builder().idVotante(novoVotanteRequest.codAssociado()).voto(novoVotanteRequest.votoEnum()).build();
+        Votante novoVotante = Votante.builder().cpf(novoVotanteRequest.cpf()).voto(novoVotanteRequest.votoEnum()).build();
         given(votanteService.salvarVotante(novoVotanteRequest)).willReturn(novoVotante);
         ObjectMapper mapper = new ObjectMapper();
         String falha = mapper.writeValueAsString(novoVotanteRequest);

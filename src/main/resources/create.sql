@@ -1,7 +1,7 @@
 
 create table if not exists votante(
      id uuid not null,
-     cod_associado varchar(8) not null,
+     cpf varchar(11) not null,
      voto varchar(7) not null,
      primary key (id)
      );

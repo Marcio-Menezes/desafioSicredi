@@ -4,6 +4,7 @@
  */
 package com.dbserver.desafiovotacao.service;
 
+import com.dbserver.desafiovotacao.controller.Inicializador;
 import com.dbserver.desafiovotacao.dto.VotanteRequest;
 import com.dbserver.desafiovotacao.enums.VotoEnum;
 import com.dbserver.desafiovotacao.model.Votante;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Testar Votante Service")
-public class VotanteServiceImplementacaoIT {
+public class VotanteServiceImplementacaoUnitario {
 
     @Mock
     private VotanteRepositorio votanteRepositorio;
@@ -40,11 +41,11 @@ public class VotanteServiceImplementacaoIT {
 
     Votante votante;
 
-    VotanteRequest votanteRequest = new VotanteRequest("codTeste", VotoEnum.NAO);
 
     @BeforeEach
     public void setUp() {
-        votante = Votante.builder().idVotante("codTeste").voto(VotoEnum.NAO).build();
+        Inicializador inicializador = new Inicializador();
+        votante = inicializador.construirVotante();
     }
 
     @Test
@@ -73,9 +74,11 @@ public class VotanteServiceImplementacaoIT {
 
     @Test
     public void testSalvarVotante() {
-        when(votanteRepositorio.save(votante)).thenReturn(votante);
+        VotanteRequest votanteRequest = new VotanteRequest("07385928030", VotoEnum.NAO);
+        Votante novoVotante = Votante.builder().cpf("07385928030").voto(VotoEnum.NAO).build();
+        when(votanteRepositorio.save(novoVotante)).thenReturn(novoVotante);
 		votanteService.salvarVotante(votanteRequest);
-		verify(votanteRepositorio, times(1)).save(votante);
+		verify(votanteRepositorio, times(1)).save(novoVotante);
     }
 
     @Test

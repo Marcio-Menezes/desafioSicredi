@@ -2,6 +2,7 @@
 package com.dbserver.desafiovotacao.service;
 
 import com.dbserver.desafiovotacao.dto.VotanteRequest;
+import com.dbserver.desafiovotacao.exception.AcaoInvalidaException;
 import com.dbserver.desafiovotacao.model.Votante;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,5 +12,5 @@ public interface VotanteService {
     Optional<Votante> encontrarVotantePorID(UUID id) throws DataAccessException;
 	long totalVotantes();
 	Iterable<Votante> findAll();
-    Votante salvarVotante(VotanteRequest votanteRequest) throws DataAccessException;
+    Votante salvarVotante(VotanteRequest votanteRequest) throws AcaoInvalidaException;
 }

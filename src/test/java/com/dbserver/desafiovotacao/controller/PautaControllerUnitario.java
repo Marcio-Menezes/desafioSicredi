@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Testando o PautaController")
-public class PautaControllerIT {
+public class PautaControllerUnitario {
     
     @Autowired
     MockMvc mockito;
@@ -45,18 +45,15 @@ public class PautaControllerIT {
     PautaServiceImplementacao pautaService;
 
     Pauta pauta = new Pauta();
-    Votante votante = new Votante();
     Votante votanteAutor = new Votante();
 
     PautaResponse pautaResponse;
     
     @BeforeEach
     public void setUp() {
-        votante = Votante.builder().id(UUID.randomUUID()).idVotante("votante1").voto(VotoEnum.SIM).build();
-        votanteAutor = Votante.builder().id(UUID.randomUUID()).idVotante("autoria1").voto(VotoEnum.AUTORIA).build();
-        pauta = Pauta.builder().id(UUID.randomUUID()).titulo("Teste").descricao("Esse é um teste unitário").autorPauta(votanteAutor).hash("2h-23bh5").build();
-        pauta.setAssociados(new ArrayList<>());
-        pauta.getAssociados().add(votante);
+        Inicializador inicializador = new Inicializador();
+        votanteAutor = inicializador.construirVotanteAutor();
+        pauta = inicializador.construirPauta();
         pautaResponse = new PautaResponse(pauta);
 
     }
@@ -162,7 +159,7 @@ public class PautaControllerIT {
     @Test
     @DisplayName("Teste de adicionar um votante a uma pauta")
     public void testaAdicionarVotante() throws Exception {
-        Votante novoVotante = Votante.builder().id(UUID.randomUUID()).idVotante("db2023").voto(VotoEnum.SIM).build();
+        Votante novoVotante = Votante.builder().id(UUID.randomUUID()).cpf("db2023").voto(VotoEnum.SIM).build();
         ClienteRequest clienteRequest  = new ClienteRequest(novoVotante.getId());
         given(pautaService.adicionarAssociado(pauta.getHash(),clienteRequest)).willReturn(pauta);
         ObjectMapper mapper = new ObjectMapper();

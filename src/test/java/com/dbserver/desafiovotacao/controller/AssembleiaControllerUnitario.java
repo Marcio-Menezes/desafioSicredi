@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Testar AssembleiaController")
-public class AssembleiaControllerIT {
+public class AssembleiaControllerUnitario {
     
     @Autowired
     MockMvc mockito;
@@ -56,21 +56,15 @@ public class AssembleiaControllerIT {
 
     AssembleiaRequest assembleiaRequest = new AssembleiaRequest("teste unitario");
     Assembleia assembleia = new Assembleia();
-
-    Pauta pauta = new Pauta();
-    Votante votante = new Votante();
     Votante votanteAutor = new Votante();
 
     AssembleiaResponse assembleiaResponse;
 
     @BeforeEach
     public void setUp() throws JsonProcessingException {
-        votante = Votante.builder().id(UUID.randomUUID()).idVotante("votante1").voto(VotoEnum.SIM).build();
-        votanteAutor = Votante.builder().id(UUID.randomUUID()).idVotante("autoria1").voto(VotoEnum.AUTORIA).build();
-        pauta = Pauta.builder().id(UUID.randomUUID()).titulo("Teste").descricao("Esse é um teste unitário").associados(new ArrayList<>()).autorPauta(votanteAutor).hash("2h-23bh5").build();
-        pauta.getAssociados().add(votante);
-        assembleia = Assembleia.builder().id(UUID.randomUUID()).nomeAssembleia("Teste de Assembleia").aberturaAssembleia(LocalDateTime.now()).listaPauta(new ArrayList<>()).nomeAssembleia("Teste Assembleia").build();
-        assembleia.getListaPauta().add(pauta);
+        Inicializador inicializador = new Inicializador();
+        votanteAutor = inicializador.construirVotanteAutor();
+        assembleia = inicializador.construirAssembleia();
         assembleiaResponse = new AssembleiaResponse(assembleia);
         retornoJSON = mapper.writeValueAsString(assembleiaResponse);
     }
@@ -79,8 +73,6 @@ public class AssembleiaControllerIT {
     @DisplayName("Teste de Criar uma assembleia")
     public void testCriarAssembleia() throws Exception {
         given(assembleiaService.salvarAssembleia(assembleiaRequest)).willReturn(assembleia);
-
-        ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         String novaAssembleia = mapper.writeValueAsString(assembleiaRequest);
         this.mockito.perform(post("/api")
@@ -97,8 +89,6 @@ public class AssembleiaControllerIT {
         AssembleiaRequest novaAssembleiaRequest = new AssembleiaRequest("");
         Assembleia novaAssembleia = Assembleia.builder().nomeAssembleia(novaAssembleiaRequest.nomeAssembleia()).build();
         given(assembleiaService.salvarAssembleia(novaAssembleiaRequest)).willReturn(novaAssembleia);
-
-        ObjectMapper mapper = new ObjectMapper();
         String falha = mapper.writeValueAsString(novaAssembleiaRequest);
         this.mockito.perform(post("/api")
                         .content(falha)
@@ -114,7 +104,6 @@ public class AssembleiaControllerIT {
         Pauta novaPauta = Pauta.builder().id(UUID.randomUUID()).titulo("Nova Pauta").autorPauta(votanteAutor).hash("378763").build();
         ClienteRequest clienteRequest  = new ClienteRequest(novaPauta.getId());
         given(assembleiaService.adicionarPauta(assembleia.getId(),clienteRequest)).willReturn(assembleia);
-        ObjectMapper mapper = new ObjectMapper();
         String encontrarAssembleiaJSON = mapper.writeValueAsString(clienteRequest);
         this.mockito.perform(post("/api/adicionapauta/" + assembleia.getId())
                         .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -129,7 +118,6 @@ public class AssembleiaControllerIT {
     public void testaFinalizaAssembleiaFalha() throws Exception {
 
         given(assembleiaService.finalizarAssembleia(assembleia.getId())).willReturn(assembleia);
-        ObjectMapper mapper = new ObjectMapper();
         String encontrarAssembleiaJSON = mapper.writeValueAsString(assembleiaRequest);
         this.mockito.perform(get("/api/finalizarassembleia/" + assembleia.getId())
                         .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -144,12 +132,9 @@ public class AssembleiaControllerIT {
     public void testaFinalizaAssembleiaSucesso() throws Exception {
         assembleia.getListaPauta().get(0).setAndamento(PautaAndamentoEnum.CONCLUIDO);
         given(assembleiaService.finalizarAssembleia(assembleia.getId())).willReturn(assembleia);
-        ObjectMapper mapper = new ObjectMapper();
-        String encontrarAssembleiaJSON = mapper.writeValueAsString(assembleiaRequest);
         this.mockito.perform(get("/api/finalizarassembleia/" + assembleia.getId())
                         .accept(MediaType.APPLICATION_JSON_VALUE)
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(encontrarAssembleiaJSON))
+                        .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk());
         verify(assembleiaService, times(1)).finalizarAssembleia(assembleia.getId());
     }
@@ -159,7 +144,6 @@ public class AssembleiaControllerIT {
     public void testaMostrarPautas() throws Exception {
 
         given(assembleiaService.mostraPautas(assembleia.getId())).willReturn(assembleia.getListaPauta());
-        ObjectMapper mapper = new ObjectMapper();
         String encontrarAssembleiaJSON = mapper.writeValueAsString(assembleiaRequest);
         this.mockito.perform(get("/api/mostrarpautas/" + assembleia.getId())
                         .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -192,7 +176,6 @@ public class AssembleiaControllerIT {
         List<Assembleia> listaAssembleias = Arrays.asList(assembleia);
         Page<Assembleia> pageAssembleias = new PageImpl<>(listaAssembleias);
         given(assembleiaService.mostraTudo(pageable)).willReturn(pageAssembleias);
-        ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         String encontrarAssembleiaJSON = mapper.writeValueAsString(pageAssembleias);
         this.mockito.perform(get("/api/tudo")
